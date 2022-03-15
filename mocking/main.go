@@ -3,9 +3,10 @@ package main
 import (
 	"mocking/countdown"
 	"os"
+	"time"
 )
 
 func main() {
-	defaultSleeper := &countdown.DefaultSleeper{}
-	countdown.Start(os.Stdout, defaultSleeper)
+	sleeper := &countdown.ConfigurableSleeper{Duration: 1 * time.Second, SleepFunc: time.Sleep}
+	countdown.Start(os.Stdout, sleeper)
 }
