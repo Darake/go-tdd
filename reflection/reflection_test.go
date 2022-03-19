@@ -80,14 +80,7 @@ func TestWalk(t *testing.T) {
 
 	for _, test := range cases {
 		t.Run(test.Name, func(t *testing.T) {
-			var got []string
-			Walk(test.Input, func(input string) {
-				got = append(got, input)
-			})
-
-			if !reflect.DeepEqual(got, test.ExpectedCalls) {
-				t.Errorf("got %v, want %v", got, test.ExpectedCalls)
-			}
+			assertPredictableOrderInput(t, test.Input, test.ExpectedCalls)
 		})
 	}
 
@@ -97,10 +90,7 @@ func TestWalk(t *testing.T) {
 			"Baz": "Boz",
 		}
 
-		var got []string
-		Walk(aMap, func(input string) {
-			got = append(got, input)
-		})
+		got := runAction(t, aMap)
 
 		assertContains(t, got, "Bar")
 		assertContains(t, got, "Boz")
@@ -115,17 +105,35 @@ func TestWalk(t *testing.T) {
 			close(aChannel)
 		}()
 
-		var got []string
 		want := []string{"Helsinki", "Tampere"}
 
-		Walk(aChannel, func(input string) {
-			got = append(got, input)
-		})
-
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got %v, want %v", got, want)
-		}
+		assertPredictableOrderInput(t, aChannel, want)
 	})
+
+	t.Run("With function", func(t *testing.T) {
+		aFuncion := func() (Profile, Profile) {
+			return Profile{29, "Helsinki"}, Profile{39, "Tampere"}
+		}
+
+		want := []string{"Helsinki", "Tampere"}
+
+		assertPredictableOrderInput(t, aFuncion, want)
+	})
+}
+
+func runAction(t testing.TB, input interface{}) (got []string) {
+	t.Helper()
+	Walk(input, func(input string) {
+		got = append(got, input)
+	})
+	return
+}
+
+func assertPredictableOrderInput(t testing.TB, input interface{}, want []string) {
+	got := runAction(t, input)
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
 }
 
 func assertContains(t testing.TB, haystack []string, needle string) {
